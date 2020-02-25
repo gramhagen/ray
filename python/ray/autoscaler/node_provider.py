@@ -23,6 +23,10 @@ def import_azure():
     from ray.autoscaler.azure.node_provider import AzureNodeProvider
     return bootstrap_azure, AzureNodeProvider
 
+def import_aci():
+    from ray.autoscaler.aci.config import bootstrap_aci
+    from ray.autoscaler.aci.node_provider import AciNodeProvider
+    return bootstrap_aci, AciNodeProvider
 
 def import_local():
     from ray.autoscaler.local.config import bootstrap_local
@@ -63,6 +67,11 @@ def load_azure_example_config():
     return os.path.join(
         os.path.dirname(ray_azure.__file__), "example-full.yaml")
 
+def load_aci_example_config():
+    import ray.autoscaler.aci as ray_aci
+    return os.path.join(
+        os.path.dirname(ray_aci.__file__), "example-full.yaml")
+
 
 def import_external():
     """Mock a normal provider importer."""
@@ -77,6 +86,7 @@ NODE_PROVIDERS = {
     "local": import_local,
     "aws": import_aws,
     "gcp": import_gcp,
+    "aci": import_aci,
     "azure": import_azure,
     "kubernetes": import_kubernetes,
     "docker": None,
@@ -87,6 +97,7 @@ DEFAULT_CONFIGS = {
     "local": load_local_example_config,
     "aws": load_aws_example_config,
     "gcp": load_gcp_example_config,
+    "aci": load_aci_example_config,
     "azure": load_azure_example_config,
     "kubernetes": load_kubernetes_example_config,
     "docker": None,
