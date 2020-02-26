@@ -94,7 +94,7 @@ def _configure_msi_user(config):
         logger.info("Creating MSI user assigned identity")
         identity = msi_client.user_assigned_identities.create_or_update(
             resource_group_name=resource_group,
-            resource_name=uuid.uuid4(),
+            resource_name='ray-identity-{}'.format(uuid.uuid4()),
             location=location)
 
     identity_id = identity.id
@@ -107,7 +107,7 @@ def _configure_msi_user(config):
         scope=resource_group_id, filter="roleName eq 'Contributor'").next().id
     role_params = {"role_definition_id": role_id, "principal_id": principal_id}
 
-    for _ in range(RETRIES):
+    for _ in range(3 * RETRIES):
         try:
             filter_expr = "principalId eq '{}'".format(principal_id)
             assignments = auth_client.role_assignments.list_for_scope(
@@ -123,9 +123,9 @@ def _configure_msi_user(config):
             logger.info("Creating contributor role assignment")
         except CloudError as ce:
             if ce.inner_exception.error == "PrincipalNotFound":
-                time.sleep(3)
+                time.sleep(5)
     else:
-        raise Exception("Failed to create contributor role assignment")
+        raise Exception("Failed to create contributor role assignment (timeout)")
 
     return config
 

@@ -7,12 +7,13 @@ from msrestazure.azure_active_directory import MSIAuthentication
 from azure.mgmt.compute import ComputeManagementClient
 from azure.mgmt.network import NetworkManagementClient
 from azure.mgmt.compute.models import ResourceIdentityType
+from msrestazure.azure_exceptions import CloudError
 
 from ray.autoscaler.node_provider import NodeProvider
-from ray.autoscaler.tags import TAG_RAY_CLUSTER_NAME, TAG_RAY_NODE_NAME
+from ray.autoscaler.tags import TAG_RAY_CLUSTER_NAME, TAG_RAY_NODE_NAME, TAG_RAY_NODE_TYPE, NODE_TYPE_HEAD
 
 INSTANCE_NAME_MAX_LEN = 64
-INSTANCE_NAME_UUID_LEN = 4
+INSTANCE_NAME_UUID_LEN = 8
 
 logger = logging.getLogger(__name__)
 
@@ -51,7 +52,7 @@ class AzureNodeProvider(NodeProvider):
                 client_class=NetworkManagementClient, **kwargs)
         except Exception:
             logger.info(
-                "CLI profile authentication failed. Trying MSI", exc_info=True)
+                "CLI profile authentication failed. Trying MSI...")
 
             credentials = MSIAuthentication()
             self.compute_client = ComputeManagementClient(
@@ -101,12 +102,19 @@ class AzureNodeProvider(NodeProvider):
             resource_group_name=resource_group,
             network_interface_name=metadata["nic_name"])
         ip_config = nic.ip_configurations[0]
-        public_ip_id = ip_config.public_ip_address.id
-        metadata["public_ip_name"] = public_ip_id.split("/")[-1]
-        public_ip = self.network_client.public_ip_addresses.get(
-            resource_group_name=resource_group,
-            public_ip_address_name=metadata["public_ip_name"])
-        metadata["external_ip"] = public_ip.ip_address
+
+        if metadata["tags"][TAG_RAY_NODE_TYPE] == NODE_TYPE_HEAD:
+            public_ip_id = ip_config.public_ip_address.id
+            metadata["public_ip_name"] = public_ip_id.split("/")[-1]
+
+            public_ip = self.network_client.public_ip_addresses.get(
+                resource_group_name=resource_group,
+                public_ip_address_name=metadata["public_ip_name"])
+            metadata["external_ip"] = public_ip.ip_address
+        else:
+            # for worker nodes just use the internal ip as we're on the same vnet
+            metadata["external_ip"] = ip_config.private_ip_address
+
         metadata["internal_ip"] = ip_config.private_ip_address
 
         return metadata
@@ -172,10 +180,13 @@ class AzureNodeProvider(NodeProvider):
         config["tags"] = config_tags
         config["location"] = location
         name_tag = config_tags.get(TAG_RAY_NODE_NAME, "node")
+        node_type = config_tags.get(TAG_RAY_NODE_TYPE, "head")
 
         for _ in range(count):
             unique_id = uuid4().hex[:INSTANCE_NAME_UUID_LEN]
             vm_name = "{name}-{id}".format(name=name_tag, id=unique_id)
+
+            config["os_profile"]["computer_name"] = vm_name
 
             try:
                 assert len(vm_name) <= INSTANCE_NAME_MAX_LEN
@@ -183,26 +194,30 @@ class AzureNodeProvider(NodeProvider):
                 e.args += ("name", vm_name)
                 raise
 
-            # get public ip address
-            public_ip_addess_params = {
-                "location": location,
-                "public_ip_allocation_method": "Dynamic"
+            ip_configuration = {
+                "name": uuid4().hex,
+                "subnet": {
+                    "id": subnet_id
+                }
             }
-            public_ip_address = (
-                self.network_client.public_ip_addresses.create_or_update(
-                    resource_group_name=resource_group,
-                    public_ip_address_name="{}-ip".format(vm_name),
-                    parameters=public_ip_addess_params).result())
+
+            # get public ip address for the head node
+            if node_type == NODE_TYPE_HEAD:
+                public_ip_addess_params = {
+                    "location": location,
+                    "public_ip_allocation_method": "Dynamic"
+                }
+                public_ip_address = (
+                    self.network_client.public_ip_addresses.create_or_update(
+                        resource_group_name=resource_group,
+                        public_ip_address_name="{}-ip".format(vm_name),
+                        parameters=public_ip_addess_params).result())
+
+                ip_configuration["public_ip_address"] = public_ip_address
 
             nic_params = {
                 "location": location,
-                "ip_configurations": [{
-                    "name": uuid4().hex,
-                    "public_ip_address": public_ip_address,
-                    "subnet": {
-                        "id": subnet_id
-                    }
-                }]
+                "ip_configurations": [ip_configuration]
             }
             nic = self.network_client.network_interfaces.create_or_update(
                 resource_group_name=resource_group,
