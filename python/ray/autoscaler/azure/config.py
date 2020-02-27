@@ -78,7 +78,7 @@ def _configure_msi_user(config):
         logger.info("Creating MSI user assigned identity")
         identity = msi_client.user_assigned_identities.create_or_update(
             resource_group_name=resource_group,
-            resource_name="ray-user-{}".format(uuid.uuid4()),
+            resource_name="ray-identity-{}".format(uuid.uuid4()),
             location=location)
 
     identity_id = identity.id
