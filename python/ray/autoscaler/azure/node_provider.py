@@ -180,7 +180,6 @@ class AzureNodeProvider(NodeProvider):
         config["tags"] = config_tags
         config["location"] = location
         name_tag = config_tags.get(TAG_RAY_NODE_NAME, "node")
-        node_type = config_tags.get(TAG_RAY_NODE_TYPE, "head")
 
         for _ in range(count):
             unique_id = uuid4().hex[:VM_NAME_UUID_LEN]
@@ -199,7 +198,7 @@ class AzureNodeProvider(NodeProvider):
                     "id": subnet_id
             }
 
-            if node_type == NODE_TYPE_HEAD:
+            if config_tags[TAG_RAY_NODE_TYPE] == NODE_TYPE_HEAD:
                 # get public ip address
                 public_ip_addess_params = {
                     "location": location,
