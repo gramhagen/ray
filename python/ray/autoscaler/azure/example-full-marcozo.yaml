@@ -57,7 +57,7 @@ provider:
     # create credential json file to use an existing service principal 
     # https://docs.microsoft.com/en-us/azure/python/python-sdk-azure-authenticate#mgmt-auth-file
     # e.g. ~/.azure/azure_credentials_ray-service.json
-    resource_group: mc-ray-cluster01
+    resource_group: mc-ray-cluster03
     tags:
         alias: marcozo
         expires: "2031-01-01"
@@ -155,19 +155,20 @@ setup_commands:
     - conda create -y -n ray python=3.7
     # Development
     - echo 'conda activate ray' >> ~/.bashrc
-    
+    - pip install https://marcozopip.blob.core.windows.net/wheel/ray-0.9.0.dev0-cp37-cp37m-linux_x86_64.whl
+    - conda install -y tensorflow-gpu
+    - conda install -y pytorch-gpu
 
 # Custom commands that will be run on the head node after common setup.
 head_setup_commands:
-    - pip install https://marcozopip.blob.core.windows.net/wheel/ray-0.9.0.dev0-cp37-cp37m-linux_x86_64.whl
     - >
         pip install
         azure-cli-core azure-core azure-mgmt-authorization azure-mgmt-network azure-mgmt-compute azure-mgmt-msi
         paramiko aiohttp grpcio psutil setproctitle
 
 # Custom commands that will be run on worker nodes after common setup.
-worker_setup_commands: 
-    - pip install -U https://s3-us-west-2.amazonaws.com/ray-wheels/latest/ray-0.9.0.dev0-cp37-cp37m-manylinux1_x86_64.whl
+worker_setup_commands: []
+    # - pip install -U https://s3-us-west-2.amazonaws.com/ray-wheels/latest/ray-0.9.0.dev0-cp37-cp37m-manylinux1_x86_64.whl
 
 # Command to start ray on the head node. You don't need to change this.
 head_start_ray_commands:
