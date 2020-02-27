@@ -145,7 +145,7 @@ head_setup_commands:
     - >
         pip install
         azure-cli-core azure-core azure-mgmt-authorization azure-mgmt-network azure-mgmt-compute azure-mgmt-msi
-        paramiko aiohttp grpcio psutil setproctitle
+        paramiko psutil setproctitle
 
 # Custom commands that will be run on worker nodes after common setup.
 worker_setup_commands: []
