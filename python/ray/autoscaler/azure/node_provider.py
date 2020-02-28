@@ -7,6 +7,7 @@ from msrestazure.azure_active_directory import MSIAuthentication
 from azure.mgmt.compute import ComputeManagementClient
 from azure.mgmt.network import NetworkManagementClient
 from azure.mgmt.compute.models import ResourceIdentityType
+from knack.util import CLIError
 
 from ray.autoscaler.node_provider import NodeProvider
 from ray.autoscaler.tags import TAG_RAY_CLUSTER_NAME, TAG_RAY_NODE_NAME, TAG_RAY_NODE_TYPE, NODE_TYPE_HEAD
@@ -50,15 +51,17 @@ class AzureNodeProvider(NodeProvider):
                 client_class=ComputeManagementClient, **kwargs)
             self.network_client = get_client_from_cli_profile(
                 client_class=NetworkManagementClient, **kwargs)
-        except Exception:
-            logger.info(
-                "CLI profile authentication failed. Trying MSI")
+        except CLIError as e:
+            if str(e) != "Please run 'az login' to setup account.":
+                raise
+            else:
+                logger.info("CLI profile authentication failed. Trying MSI")
 
-            credentials = MSIAuthentication()
-            self.compute_client = ComputeManagementClient(
-                credentials=credentials, **kwargs)
-            self.network_client = NetworkManagementClient(
-                credentials=credentials, **kwargs)
+                credentials = MSIAuthentication()
+                self.compute_client = ComputeManagementClient(
+                    credentials=credentials, **kwargs)
+                self.network_client = NetworkManagementClient(
+                    credentials=credentials, **kwargs)
 
         self.lock = RLock()
 
@@ -196,9 +199,10 @@ class AzureNodeProvider(NodeProvider):
                 "name": uuid4().hex,
                 "subnet": {
                     "id": subnet_id
-            }
+                }
+            }   
 
-            if config_tags[TAG_RAY_NODE_TYPE] == NODE_TYPE_HEAD:
+            if node_type == config_tags[TAG_RAY_NODE_TYPE]:
                 # get public ip address
                 public_ip_addess_params = {
                     "location": location,
@@ -264,29 +268,29 @@ class AzureNodeProvider(NodeProvider):
         # resource_group_name=self.provider_config["resource_group"],
         # vm_name=node_id)
         resource_group = self.provider_config["resource_group"]
-        nodes = self._get_filtered_nodes(
-            tag_filters={TAG_RAY_CLUSTER_NAME: self.cluster_name})
-        for node, metadata in nodes.items():
-            # gather disks to delete later
-            vm = self.compute_client.virtual_machines.get(
-                resource_group_name=resource_group, vm_name=node)
-            disks = vm.storage_profile.data_disks
-            disks.append(vm.storage_profile.os_disk)
-            # delete machine
-            self.compute_client.virtual_machines.delete(
-                resource_group_name=resource_group, vm_name=node).wait()
-            # delete nic
-            self.network_client.network_interfaces.delete(
-                resource_group_name=resource_group,
-                network_interface_name=metadata["nic_name"])
+        vm = self.compute_client.virtual_machines.get(
+            resource_group_name=resource_group, vm_name=node_id)
+        disks = vm.storage_profile.data_disks
+        disks.append(vm.storage_profile.os_disk)
+        # delete machine
+        self.compute_client.virtual_machines.delete(
+            resource_group_name=resource_group, vm_name=node).wait()
+        # delete nic
+        self.network_client.network_interfaces.delete(
+            resource_group_name=resource_group,
+            network_interface_name=metadata["nic_name"])
+        try:
             # delete ip address
             self.network_client.public_ip_addresses.delete(
                 resource_group_name=resource_group,
                 public_ip_address_name=metadata["public_ip_name"])
-            # delete disks
-            for disk in disks:
-                self.compute_client.disks.delete(
-                    resource_group_name=resource_group, disk_name=disk.name)
+        except:
+            # faster than checking it exists (which it doesn't for worker nodes)
+            pass
+        # delete disks
+        for disk in disks:
+            self.compute_client.disks.delete(
+                resource_group_name=resource_group, disk_name=disk.name)
 
     def _get_node(self, node_id):
         self._get_filtered_nodes({})  # Side effect: updates cache
