@@ -30,15 +30,15 @@ def synchronized(f):
 
 
 class AzureNodeProvider(NodeProvider):
-    """
-    Azure Node Provider
-    Assumes credentials are set by running `az login`
-    and default subscription is configured through `az account`
-    or set in provider config
+    """Node Provider for Azure.
+    
+    This provider assumes Azure credentials are set by running ``az login``
+    and the default subscription is configured through ``az account``
+    or set in the ``provider`` field of the autoscaler configuration.
 
     Nodes may be in one of three states: {pending, running, terminated}. Nodes
-    appear immediately once started by `create_node`, and transition
-    immediately to terminated when `terminate_node` is called.
+    appear immediately once started by ``create_node``, and transition
+    immediately to terminated when ``terminate_node`` is called.
     """
 
     def __init__(self, provider_config, cluster_name):
@@ -106,17 +106,13 @@ class AzureNodeProvider(NodeProvider):
             network_interface_name=metadata["nic_name"])
         ip_config = nic.ip_configurations[0]
 
-        if metadata["tags"][TAG_RAY_NODE_TYPE] == NODE_TYPE_HEAD:
+        if not self.provider_config.get("use_internal_ips", False):
             public_ip_id = ip_config.public_ip_address.id
             metadata["public_ip_name"] = public_ip_id.split("/")[-1]
-
             public_ip = self.network_client.public_ip_addresses.get(
                 resource_group_name=resource_group,
                 public_ip_address_name=metadata["public_ip_name"])
             metadata["external_ip"] = public_ip.ip_address
-        else:
-            # for worker nodes just use the internal ip as we're on the same vnet
-            metadata["external_ip"] = ip_config.private_ip_address
 
         metadata["internal_ip"] = ip_config.private_ip_address
 
@@ -195,15 +191,10 @@ class AzureNodeProvider(NodeProvider):
                 e.args += ("name", vm_name)
                 raise
 
-            ip_configuration = {
-                "name": uuid4().hex,
-                "subnet": {
-                    "id": subnet_id
-                }
-            }   
+            ip_configuration = {"name": uuid4(), "subnet": {"id": subnet_id}}
 
-            if node_type == config_tags[TAG_RAY_NODE_TYPE]:
-                # get public ip address
+            if not self.provider_config.get("use_internal_ips", False):
+                # create public ip address
                 public_ip_addess_params = {
                     "location": location,
                     "public_ip_allocation_method": "Dynamic"
@@ -213,7 +204,6 @@ class AzureNodeProvider(NodeProvider):
                         resource_group_name=resource_group,
                         public_ip_address_name="{}-ip".format(vm_name),
                         parameters=public_ip_addess_params).result())
-
                 ip_configuration["public_ip_address"] = public_ip_address
 
             nic_params = {
@@ -263,7 +253,8 @@ class AzureNodeProvider(NodeProvider):
         self.cached_nodes[node_id]["tags"] = node_tags
 
     def terminate_node(self, node_id):
-        """Terminates the specified node."""
+        """Terminates the specified node. This will delete the VM and
+           associated resources (NIC, IP, Storage) for the specified node."""
         # self.compute_client.virtual_machines.deallocate(
         # resource_group_name=self.provider_config["resource_group"],
         # vm_name=node_id)
@@ -279,14 +270,11 @@ class AzureNodeProvider(NodeProvider):
         self.network_client.network_interfaces.delete(
             resource_group_name=resource_group,
             network_interface_name=metadata["nic_name"])
-        try:
-            # delete ip address
+        # delete ip address
+        if "public_ip_name" in metadata:
             self.network_client.public_ip_addresses.delete(
                 resource_group_name=resource_group,
                 public_ip_address_name=metadata["public_ip_name"])
-        except:
-            # faster than checking it exists (which it doesn't for worker nodes)
-            pass
         # delete disks
         for disk in disks:
             self.compute_client.disks.delete(
