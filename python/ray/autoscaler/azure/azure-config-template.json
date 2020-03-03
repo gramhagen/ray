@@ -10,7 +10,7 @@
         }
     },
     "variables": {
-        "Contributor": "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Authorization/roleDefinitions/', 'b24988ac-6180-42a0-ab88-20f7382dd24c')]",
+        "Contributor": "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Authorization/roleDefinitions/', 'b24988ac-6180-42a0-ab88-20f7382dd24c')]"
     },
     "resources": [
        {
@@ -72,11 +72,5 @@
                 ]
             }
         }
-    ],
-    "outputs": {
-        "test": {
-            "type":"string",
-            "value": "[reference('ray-vnet').addressSpace.addressPrefixes[0]]"
-        }
-    }
+    ]
 }

@@ -72,18 +72,13 @@ auth:
 # Note: the Azure Python SDK expects all parameter keys to be in slug_style
 #       the styles of parameter values are not changed
 head_node:
-    hardware_profile:
-        vm_size: Standard_D2s_v3
-    storage_profile:
-        os_disk:
-            create_option: FromImage
-            caching: ReadWrite
-        image_reference:
-            # List images https://docs.microsoft.com/en-us/azure/virtual-machines/linux/cli-ps-findimage
-            publisher: microsoft-dsvm
-            offer: ubuntu-1804
-            sku: 1804-gen2
-            version: 20.02.01
+    azure_arm_parameters:
+        vmSize: Standard_D2s_v3
+        # List images https://docs.microsoft.com/en-us/azure/virtual-machines/linux/cli-ps-findimage
+        imagePublisher: microsoft-dsvm
+        imageOffer: ubuntu-1804
+        imageSku: 1804-gen2
+        imageVersion: 20.02.01
 
 # Provider-specific config for worker nodes, e.g. instance type. By default
 # Ray will auto-configure unspecified fields
@@ -92,21 +87,13 @@ head_node:
 # Note: the Azure Python SDK expects all parameter keys to be in slug_style
 #       the styles of parameter values are not changed
 worker_nodes:
-    hardware_profile:
-        vm_size: Standard_D2s_v3
-    storage_profile:
-        os_disk:
-            create_option: FromImage
-            caching: ReadWrite
-        image_reference:
-            # List images https://docs.microsoft.com/en-us/azure/virtual-machines/linux/cli-ps-findimage
-            publisher: microsoft-dsvm
-            offer: ubuntu-1804
-            sku: 1804-gen2
-            version: 20.02.01
-        # You can provision additional disk space as follows
-        # data_disks:
-        #    - disk_size_gb: 1024
+    azure_arm_parameters:
+        vmSize: Standard_D2s_v3
+        # List images https://docs.microsoft.com/en-us/azure/virtual-machines/linux/cli-ps-findimage
+        imagePublisher: microsoft-dsvm
+        imageOffer: ubuntu-1804
+        imageSku: 1804-gen2
+        imageVersion: 20.02.01
     # run workers on spot instances by default
     priority: Spot
     eviction_policy: Deallocate

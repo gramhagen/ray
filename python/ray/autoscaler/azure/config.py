@@ -1,4 +1,5 @@
 import logging
+import random
 import os
 import time
 import uuid
@@ -8,6 +9,7 @@ from azure.common.client_factory import get_client_from_cli_profile
 from azure.mgmt.authorization import AuthorizationManagementClient
 from azure.mgmt.network import NetworkManagementClient
 from azure.mgmt.resource import ResourceManagementClient
+from azure.mgmt.resource.resources.models import DeploymentMode
 from azure.mgmt.msi import ManagedServiceIdentityClient
 import paramiko
 
@@ -21,10 +23,10 @@ logger = logging.getLogger(__name__)
 
 
 def bootstrap_azure(config):
-    config = _configure_resource_group(config)
-    config = _configure_msi_user(config)
     config = _configure_key_pair(config)
-    config = _configure_network(config)
+    config = _configure_resource_group(config)
+    # config = _configure_msi_user(config)
+    # config = _configure_network(config)
     return config
 
 
@@ -58,10 +60,33 @@ def _configure_resource_group(config):
 
     logger.info("Creating/Updating Resource Group: %s", resource_group)
     resource_client.resource_groups.create_or_update(
-        resource_group_name=resource_group, parameters=params)
+    resource_group_name=resource_group, parameters=params)
+
+    # load the template
+    template_path = os.path.join(os.path.dirname(__file__), 'templates', 'azure-config-template.json')
+    with open(template_path, 'r') as template_file_fd:
+        template = json.load(template_file_fd)
+
+    # choose a random subnet
+    random.seed(resource_group)
+    parameters = {
+        "subet": "10.{}.0.0/16".format(random.randint(0, 254))
+    }
+
+    deployment_properties = {
+        'mode': DeploymentMode.incremental,
+        'template': template,
+        'parameters': {k: {'value': v} for k, v in parameters.items()}
+    }
+
+    deployment_async_operation = resource_client.deployments.create_or_update(
+        resource_group,
+        'ray-config',
+        deployment_properties
+    )
+    deployment_async_operation.wait()
 
     return config
-
 
 def _configure_msi_user(config):
     msi_client = _get_client(ManagedServiceIdentityClient, config)
@@ -148,21 +173,9 @@ def _configure_key_pair(config):
 
     config["auth"]["ssh_private_key"] = private_key_path
 
-    os_profile = {
-        "admin_username": ssh_user,
-        "computer_name": None,
-        "linux_configuration": {
-            "disable_password_authentiation": True,
-            "ssh": {
-                "public_keys": [{
-                    "key_data": public_key,
-                    "path": "/home/{}/.ssh/authorized_keys".format(ssh_user)
-                }]
-            }
-        }
-    }
     for node_type in ["head_node", "worker_nodes"]:
-        config[node_type]["os_profile"] = os_profile
+        config[node_type]["azure_arm_parameters"]["adminUser"] = ssh_user
+        config[node_type]["azure_arm_parameters"]["publicKey"] = public_key
 
     return config
 

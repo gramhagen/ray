@@ -1,0 +1,13 @@
+{
+    "vmName": { "value": "mc-ray-node-05"},
+    "adminUsername": { "value": "ubuntu"},
+    "publicKey": { "value": "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDs1dLyiKMQ9xlXFPHoceLXZYfLhG7hnv9gXV3KIMdb7B60DoYiZhS4nX9PnQOBEwAakr4Khw3HyAvqOYFvbSIBetLy0ut7YCze8omoDh1+EBhVB0GnmhTSegEIRp3YC7ca1bA/J4FyfyAWJz1G80XJy4jW1AH0CLO3Tf9vph+5BL1+AIe8hEW4MUguy6ze9z1LuuykPF+8XER5EhebdOpAHHZt3U2eCqQzF4xoSGKNyzIOz8hmcSJg+IOCsF7NdQgfvoRl0PFBVUAdL/t3pYunZbkSnyf6I80q22CIv1p/3WBFXn86LAaj3zzXpQviO/jA0tjvJD1jjyKy8n+WbVkR"},
+    "imagePublisher": { "value": "microsoft-dsvm"},
+    "imageOffer": { "value": "ubuntu-1804"},
+    "imageSku": { "value": "1804"},
+    "imageVersion": { "value": "20.02.01"},
+    "vmSize": { "value": "Standard_D2s_v3"},
+    "vmTags": { "value": { "a": "b" } },
+    "vmCount": { "value": 2 },
+    "provisionPublicIp": { "value": false }
+}

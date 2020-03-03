@@ -1,0 +1,10 @@
+min_workers: 2
+max_workers: 2
+initial_workers: 2
+
+provider:
+  resource_group: ray-test-01
+
+setup_commands:
+    - echo 'conda activate py37_tensorflow' >> ~/.bashrc
+    - pip install https://marcozopip.blob.core.windows.net/wheel/ray-0.9.0.dev0-cp37-cp37m-linux_x86_64.whl
