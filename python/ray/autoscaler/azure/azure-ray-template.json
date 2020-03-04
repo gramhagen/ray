@@ -302,8 +302,7 @@
         "imagePublisher": "microsoft-dsvm",
         "imageOffer": "ubuntu-1804",
         "imageSku": "1804",
-        "imageVersion": "latest",
-        "adminPassword": "[newGuid()]"
+        "imageVersion": "latest"
     },
     "resources": [
         {
@@ -449,9 +448,8 @@
                 "osProfile": {
                     "computerName": "[variables('vmNameHead')]",
                     "adminUsername": "[parameters('adminUsername')]",
-                    "adminPassword": "[variables('adminPassword')]",
                     "linuxConfiguration": {
-                        "disablePasswordAuthentication": false,
+                        "disablePasswordAuthentication": true,
                         "ssh": {
                             "publicKeys": [
                                 {
@@ -527,9 +525,8 @@
                     "osProfile": {
                         "computerNamePrefix": "[variables('vmNameWorker')]",
                         "adminUsername": "[parameters('adminUsername')]",
-                        "adminPassword": "[variables('adminPassword')]",
                         "linuxConfiguration": {
-                            "disablePasswordAuthentication": false,
+                            "disablePasswordAuthentication": true,
                             "ssh": {
                                 "publicKeys": [
                                     {
@@ -655,10 +652,6 @@
         "SSH": {
             "type": "string",
             "value": "[concat('ssh -t -L 8265:localhost:8265 -L 8888:localhost:8888 ', parameters('adminUsername'),'@', reference(variables('publicIpAddressName')).ipAddress, '\"bash -l -c ''conda activate ', parameters('condaEnv'), '; jupyter-notebook --no-browser''\"')]"
-        },
-        "AdminPassword": {
-            "type": "string",
-            "value": "[variables('adminPassword')]"
         }
     }
 }
