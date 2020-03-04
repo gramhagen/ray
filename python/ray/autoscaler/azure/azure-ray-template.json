@@ -2,13 +2,6 @@
     "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
     "contentVersion": "1.0.0.0",
     "parameters": {
-        "vmName": {
-            "type": "string",
-            "defaultValue": "ray-node",
-            "metadata": {
-                "description": "The name of you Virtual Machine."
-            }
-        },
         "adminUsername": {
             "type": "string",
             "defaultValue": "ubuntu",
@@ -267,35 +260,38 @@
                 "py37_tensorflow"
             ],
             "metadata": {
-                "description": "Conda environment to select"
+                "description": "Conda environment to select (installed on DSVM)"
             }
         },
-        "wheel": {
+        "PythonPackages": {
             "type": "string",
             "defaultValue": "https://marcozopip.blob.core.windows.net/wheel/ray-0.9.0.dev0-cp37-cp37m-linux_x86_64.whl",
             "metadata": {
-                "description": "Ray wheel to install"
+                "description": "Python packages to install (space separated)"
             }
         },
-        "subnetWorkers": {
-            "type": "string",
-            "defaultValue": "10.32.0.0/16"
-        },
-        "subnetHead": {
-            "type": "string",
-            "defaultValue": "10.33.0.0/16"
+        "PublicRayWebUI": {
+            "type": "bool",
+            "defaultValue": false,
+            "metadata": {
+                "description": "Open port for Ray web UI"
+            }
         }
     },
     "variables": {
-        "publicIpAddressName": "[concat(parameters('vmName'), '-ip' )]",
-        "networkIpConfig": "[guid(resourceGroup().id, parameters('vmName'))]",
+        "azureScriptInitUrl": "https://raw.githubusercontent.com/eisber/ray/marcozo/arm/python/ray/autoscaler/azure/azure-init.sh",
+        "vmName": "ray-node",
+        "subnetWorkers": "10.32.0.0/16",
+        "subnetHead": "10.33.0.0/16",
+        "publicIpAddressName": "[concat(variables('vmName'), '-ip' )]",
+        "networkIpConfig": "[guid(resourceGroup().id, variables('vmName'))]",
         "subnetRef": "[resourceId('Microsoft.Network/virtualNetworks/subnets', 'ray-vnet', 'ray-subnet')]",
         "subnetHeadRef": "[resourceId('Microsoft.Network/virtualNetworks/subnets', 'ray-vnet', 'ray-subnet-head')]",
         "osDiskType": "Standard_LRS",
-        "vmNameHead": "[concat(parameters('vmName'), '-head')]",
-        "vmNameWorker": "[concat(parameters('vmName'), '-workers')]",
-        "networkInterfaceName": "[concat(parameters('vmName'), '-nic')]",
-        "subnetNetwork": "[split(parameters('subnetHead'), '/')[0]]",
+        "vmNameHead": "[concat(variables('vmName'), '-head')]",
+        "vmNameWorker": "[concat(variables('vmName'), '-workers')]",
+        "networkInterfaceName": "[concat(variables('vmName'), '-nic')]",
+        "subnetNetwork": "[split(variables('subnetHead'), '/')[0]]",
         "headInternalIP": "[concat(substring(variables('subnetNetwork'), 0, lastIndexOf(variables('subnetNetwork'), '.')), '.5')]",
         "imagePublisher": "microsoft-dsvm",
         "imageOffer": "ubuntu-1804",
@@ -335,6 +331,19 @@
                             "destinationAddressPrefix": "*",
                             "destinationPortRange": "8000"
                         }
+                    },
+                    {
+                        "name": "Ray WebUI",
+                        "properties": {
+                            "priority": 1002,
+                            "protocol": "TCP",
+                            "access": "[if(parameters('PublicRayWebUI'), 'Allow', 'Deny')]",
+                            "direction": "Inbound",
+                            "sourceAddressPrefix": "*",
+                            "sourcePortRange": "*",
+                            "destinationAddressPrefix": "*",
+                            "destinationPortRange": "8265"
+                        }
                     }
                 ]
             }
@@ -347,21 +356,21 @@
             "properties": {
                 "addressSpace": {
                     "addressPrefixes": [
-                        "[parameters('subnetHead')]",
-                        "[parameters('subnetWorkers')]"
+                        "[variables('subnetHead')]",
+                        "[variables('subnetWorkers')]"
                     ]
                 },
                 "subnets": [
                     {
                         "name": "ray-subnet",
                         "properties": {
-                            "addressPrefix": "[parameters('subnetWorkers')]"
+                            "addressPrefix": "[variables('subnetWorkers')]"
                         }
                     },
                     {
                         "name": "ray-subnet-head",
                         "properties": {
-                            "addressPrefix": "[parameters('subnetHead')]"
+                            "addressPrefix": "[variables('subnetHead')]"
                         }
                     }
                 ]
@@ -475,9 +484,9 @@
                         "typeHandlerVersion": "2.1",
                         "autoUpgradeMinorVersion": true,
                         "settings": {
-                            "commandToExecute": "[concat('sh azure-init.sh ', parameters('adminUsername'), ' ', parameters('condaEnv'), ' ', parameters('wheel'), ' ignore head 2>&1 >/var/log/ray-head.log')]",
+                            "commandToExecute": "[concat('sh azure-init.sh ', parameters('adminUsername'), ' ', parameters('condaEnv'), ' \"', parameters('PythonPackages'), '\" ignore head 2>&1 >/var/log/ray-head.log')]",
                             "fileUris": [
-                                "https://raw.githubusercontent.com/eisber/ray/marcozo/arm/python/ray/autoscaler/azure/azure-init.sh"
+                                "[variables('azureScriptInitUrl')]"
                             ]
                         }
                     }
@@ -562,9 +571,9 @@
                                     "typeHandlerVersion": "2.1",
                                     "autoUpgradeMinorVersion": true,
                                     "settings": {
-                                        "commandToExecute": "[concat('sh azure-init.sh ', parameters('adminUsername'), ' ', parameters('condaEnv'), ' ', parameters('wheel'), ' ', variables('headInternalIP'), ' worker 2>&1 >/var/log/ray-worker.log')]",
+                                        "commandToExecute": "[concat('sh azure-init.sh ', parameters('adminUsername'), ' ', parameters('condaEnv'), ' \"', parameters('PythonPackages'), '\" ', variables('headInternalIP'), ' worker 2>&1 >/var/log/ray-worker.log')]",
                                         "fileUris": [
-                                            "https://raw.githubusercontent.com/eisber/ray/marcozo/arm/python/ray/autoscaler/azure/azure-init.sh"
+                                            "[variables('azureScriptInitUrl')]"
                                         ]
                                     }
                                 }
@@ -646,7 +655,7 @@
         },
         "SSH": {
             "type": "string",
-            "value": "[concat('ssh -t -L 8265:localhost:8265 -L 8888:localhost:8888 ', parameters('adminUsername'),'@', reference(variables('publicIpAddressName')).ipAddress, '\"bash -l -c ''conda activate ', parameters('condaEnv'), '; jupyter-notebook --no-browser''\"')]"
+            "value": "[concat('ssh -t -L 8265:localhost:8265 -L 8888:localhost:8888 ', parameters('adminUsername'),'@', reference(variables('publicIpAddressName')).ipAddress)]"
         }
     }
 }

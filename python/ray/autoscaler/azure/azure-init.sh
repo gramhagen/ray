@@ -18,7 +18,8 @@ conda activate $CONDA_ENV
 NUM_GPUS=\`nvidia-smi -L | wc -l\`
 
 ray stop
-ulimit -n 65536 ; ray start --head --redis-port=6379 --object-manager-port=8076 --num-gpus=\$NUM_GPUS --block
+ulimit -n 65536
+ray start --head --redis-port=6379 --object-manager-port=8076 --num-gpus=\$NUM_GPUS --block --webui-host 0.0.0.0
 EOM
 
 cat > /home/$USERNAME/ray-worker.sh << EOM
@@ -28,7 +29,8 @@ conda activate $CONDA_ENV
 NUM_GPUS=\`nvidia-smi -L | wc -l\`
 
 ray stop
-ulimit -n 65536 ;  ray start --address=$RAY_HEAD_IP:6379 --object-manager-port=8076 --num-gpus=\$NUM_GPUS --block
+ulimit -n 65536
+ray start --address=$RAY_HEAD_IP:6379 --object-manager-port=8076 --num-gpus=\$NUM_GPUS --block
 EOM
 
 chmod +x /home/$USERNAME/ray-head.sh
