@@ -22,6 +22,12 @@
                 "description": "SSH Key for the Virtual Machine"
             }
         },
+        "adminPassword": {
+            "type": "securestring",
+            "metadata": {
+                "description": "Password for the Virtual Machine and JupyterLab"
+            }
+        },
         "vmSize": {
             "type": "string",
             "defaultValue": "Standard_D2s_v3",
@@ -224,14 +230,6 @@
             "metadata": {
                 "description": "The size of the Virtual Machine"
             }
-        },
-        "vmPriority": {
-            "type": "string",
-            "defaultValue": "Regular",
-            "allowedValues": [
-                "Regular",
-                "Spot"
-            ]
         },
         "workerInitial": {
             "type": "int",
@@ -448,8 +446,9 @@
                 "osProfile": {
                     "computerName": "[variables('vmNameHead')]",
                     "adminUsername": "[parameters('adminUsername')]",
+                    "adminPassword": "[parameters('adminPassword')]",
                     "linuxConfiguration": {
-                        "disablePasswordAuthentication": true,
+                        "disablePasswordAuthentication": false,
                         "ssh": {
                             "publicKeys": [
                                 {
@@ -503,11 +502,6 @@
                     "mode": "Manual"
                 },
                 "virtualMachineProfile": {
-                    "priority": "[parameters('vmPriority')]",
-                    "evictionPolicy": "Delete",
-                    "billingProfile": {
-                        "maxPrice": -1
-                    },
                     "storageProfile": {
                         "osDisk": {
                             "createOption": "fromImage",
@@ -525,8 +519,9 @@
                     "osProfile": {
                         "computerNamePrefix": "[variables('vmNameWorker')]",
                         "adminUsername": "[parameters('adminUsername')]",
+                        "adminPassword": "[parameters('adminPassword')]",
                         "linuxConfiguration": {
-                            "disablePasswordAuthentication": true,
+                            "disablePasswordAuthentication": false,
                             "ssh": {
                                 "publicKeys": [
                                     {
