@@ -333,7 +333,7 @@
                         }
                     },
                     {
-                        "name": "Ray WebUI",
+                        "name": "RayWebUI",
                         "properties": {
                             "priority": 1002,
                             "protocol": "TCP",
