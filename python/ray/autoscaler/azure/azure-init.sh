@@ -41,7 +41,7 @@ cat > /lib/systemd/system/ray.service << EOM
 [Service]
    Type=simple
    User=$USERNAME
-   ExecStart=/bin/bash /home/$USERNAME/ray-$TYPE.sh
+   ExecStart=/bin/bash -i /home/$USERNAME/ray-$TYPE.sh
 
 [Install]
 WantedBy=multi-user.target
