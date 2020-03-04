@@ -67,7 +67,9 @@ Test that it works by running the following commands from your local machine:
 
 Alternatively, you can deploy a cluster using Azure portal directly. Please note that auto scaling is done using Azure VM Scale Sets.
 
-[![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Feisber%2Fray%2Fmarcozo%2Farm%2Fpython%2Fray%2Fautoscaler%2Fazure%2Fazure-ray-template.json)
+.. image:: https://aka.ms/deploytoazurebutton
+   :target: https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Feisber%2Fray%2Fmarcozo%2Farm%2Fpython%2Fray%2Fautoscaler%2Fazure%2Fazure-ray-template.json
+   :alt: Deploy to Azure
 
 GCP
 ~~~
