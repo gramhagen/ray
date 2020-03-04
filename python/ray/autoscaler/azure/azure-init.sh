@@ -7,7 +7,7 @@ RAY_HEAD_IP=$4
 TYPE=$5
 
 echo "Installing wheel..."
-sudo -u $USERNAME -i /bin/bash -c "conda init /bin/bash"
+sudo -u $USERNAME -i /bin/bash -c "conda init bash"
 sudo -u $USERNAME -i /bin/bash -c "conda activate $CONDA_ENV; pip install $WHEEL"
 
 echo "Setting up service scripts..."
