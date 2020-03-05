@@ -200,7 +200,8 @@
             "name": "[variables('networkInterfaceName')]",
             "location": "[resourceGroup().location]",
             "dependsOn": [
-                "[resourceId('Microsoft.Network/publicIpAddresses/', variables('publicIpAddressName'))]"
+                "[resourceId('Microsoft.Network/publicIpAddresses/', variables('publicIpAddressName'))]",
+                "[resourceId('Microsoft.Network/networkSecurityGroups','ray-nsg')]"
             ],
             "properties": {
                 "ipConfigurations": [
