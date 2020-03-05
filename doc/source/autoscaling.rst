@@ -65,11 +65,31 @@ Test that it works by running the following commands from your local machine:
     # Tear down the cluster.
     $ ray down ray/python/ray/autoscaler/azure/example-full.yaml
 
-Alternatively, you can deploy a cluster using Azure portal directly. Please note that auto scaling is done using Azure VM Scale Sets.
+Azure Portal
+~~~~~~~~~~~~
+
+Alternatively, you can deploy a cluster using Azure portal directly. Please note that auto scaling is done using Azure VM Scale Sets and not through
+Rays auto-scaler. This will deploy `Azure Data Science VMs (DSVM) <https://azure.microsoft.com/en-us/services/virtual-machines/data-science-virtual-machines/>`
+for both the head node and an auto-scale cluster managed by `Azure Virtual Machine Scale Sets <https://azure.microsoft.com/en-us/services/virtual-machine-scale-sets/>`.
+The head node conviently exposes both SSH as well as JupyterLab. 
 
 .. image:: https://aka.ms/deploytoazurebutton
    :target: https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Feisber%2Fray%2Fmarcozo%2Farm%2Fpython%2Fray%2Fautoscaler%2Fazure%2Fazure-ray-template.json
    :alt: Deploy to Azure
+
+Once the template is successfully deploy the deployment output page provides the ssh command to connect and the link to the JupyterHub on the head node ( 
+username/password as specified on the template input). 
+Use the following code connect to the Ray cluster.
+
+.. code-block:: python
+    import ray
+    ray.init(address='auto')
+
+Note that on each node the azure-init.sh (TODO link) script is executed and performs
+
+1. activate one of the conda environments available on DSVM
+2. install Ray and any other user-specified dependencies
+3. setup of a systemd task (/lib/systemd/system/ray.service) which starting ray in head or worker mode
 
 GCP
 ~~~
