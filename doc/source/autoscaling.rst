@@ -69,8 +69,8 @@ Azure Portal
 ~~~~~~~~~~~~
 
 Alternatively, you can deploy a cluster using Azure portal directly. Please note that auto scaling is done using Azure VM Scale Sets and not through
-Rays auto-scaler. This will deploy `Azure Data Science VMs (DSVM) <https://azure.microsoft.com/en-us/services/virtual-machines/data-science-virtual-machines/>`___
-for both the head node and an auto-scale cluster managed by `Azure Virtual Machine Scale Sets <https://azure.microsoft.com/en-us/services/virtual-machine-scale-sets/>`___.
+Rays auto-scaler. This will deploy `Azure Data Science VMs (DSVM) <https://azure.microsoft.com/en-us/services/virtual-machines/data-science-virtual-machines/>`_
+for both the head node and an auto-scale cluster managed by `Azure Virtual Machine Scale Sets <https://azure.microsoft.com/en-us/services/virtual-machine-scale-sets/>`_.
 The head node conviently exposes both SSH as well as JupyterLab. 
 
 .. image:: https://aka.ms/deploytoazurebutton
