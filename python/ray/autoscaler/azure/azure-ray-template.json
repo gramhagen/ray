@@ -656,6 +656,11 @@
         "SSH": {
             "type": "string",
             "value": "[concat('ssh -t -L 8265:localhost:8265 -L 8888:localhost:8888 ', parameters('adminUsername'),'@', reference(variables('publicIpAddressName')).ipAddress)]"
+        },
+        "RayWebUIURL": {
+            "type": "string",
+            "value": "[concat('http://', reference(variables('publicIpAddressName')).ipAddress, ':8265')]",
+            "condition": "[parameters('PublicRayWebUI')]"
         }
     }
 }
