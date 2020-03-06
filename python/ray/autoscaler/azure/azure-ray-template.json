@@ -76,7 +76,7 @@
         },
         "PublicRayWebUI": {
             "type": "bool",
-            "defaultValue": false,
+            "defaultValue": true,
             "metadata": {
                 "description": "Open port for Ray web UI"
             }
@@ -147,6 +147,19 @@
                             "sourcePortRange": "*",
                             "destinationAddressPrefix": "*",
                             "destinationPortRange": "8265"
+                        }
+                    },
+                    {
+                        "name": "TensorBoard",
+                        "properties": {
+                            "priority": 1003,
+                            "protocol": "TCP",
+                            "access": "[if(parameters('PublicRayWebUI'), 'Allow', 'Deny')]",
+                            "direction": "Inbound",
+                            "sourceAddressPrefix": "*",
+                            "sourcePortRange": "*",
+                            "destinationAddressPrefix": "*",
+                            "destinationPortRange": "6006"
                         }
                     }
                 ]
@@ -465,6 +478,11 @@
         "RayWebUIURL": {
             "type": "string",
             "value": "[concat('http://', reference(variables('publicIpAddressName')).ipAddress, ':8265')]",
+            "condition": "[parameters('PublicRayWebUI')]"
+        },
+        "TensorBoard": {
+            "type": "string",
+            "value": "[concat('http://', reference(variables('publicIpAddressName')).ipAddress, ':6006')]",
             "condition": "[parameters('PublicRayWebUI')]"
         }
     }

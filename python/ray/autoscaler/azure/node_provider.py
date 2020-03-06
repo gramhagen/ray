@@ -1,3 +1,4 @@
+import json
 import logging
 from threading import RLock
 
@@ -5,6 +6,7 @@ from azure.common.client_factory import get_client_from_cli_profile
 from msrestazure.azure_active_directory import MSIAuthentication
 from azure.mgmt.compute import ComputeManagementClient
 from azure.mgmt.network import NetworkManagementClient
+from azure.mgmt.resource import ResourceManagementClient
 from azure.mgmt.compute.models import ResourceIdentityType
 from knack.util import CLIError
 
@@ -175,7 +177,7 @@ class AzureNodeProvider(NodeProvider):
         subnet_id = self.provider_config["subnet_id"]
 
         # load the template
-        template_path = os.path.join(os.path.dirname(__file__), 'templates', 'azure-vm-template.json')
+        template_path = os.path.join(os.path.dirname(__file__), 'azure-vm-template.json')
         with open(template_path, 'r') as template_file_fd:
             template = json.load(template_file_fd)
 

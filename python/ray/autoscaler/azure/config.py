@@ -1,3 +1,4 @@
+import json
 import logging
 import random
 import os
@@ -63,14 +64,14 @@ def _configure_resource_group(config):
     resource_group_name=resource_group, parameters=params)
 
     # load the template
-    template_path = os.path.join(os.path.dirname(__file__), 'templates', 'azure-config-template.json')
+    template_path = os.path.join(os.path.dirname(__file__), 'azure-config-template.json')
     with open(template_path, 'r') as template_file_fd:
         template = json.load(template_file_fd)
 
     # choose a random subnet
     random.seed(resource_group)
     parameters = {
-        "subet": "10.{}.0.0/16".format(random.randint(0, 254))
+        "subnet": "10.{}.0.0/16".format(random.randint(0, 254))
     }
 
     deployment_properties = {

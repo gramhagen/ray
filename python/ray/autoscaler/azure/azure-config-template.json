@@ -26,7 +26,10 @@
             "properties": {
                 "principalId": "[reference('ray-msi-user-identity').principalId]",
                 "roleDefinitionId": "[variables('Contributor')]"
-            }
+            },
+            "dependsOn": [
+                "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', 'ray-msi-user-identity')]"
+            ]
         },
         {
             "type": "Microsoft.Network/networkSecurityGroups",
