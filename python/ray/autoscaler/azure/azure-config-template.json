@@ -25,7 +25,9 @@
             "name": "[guid(resourceGroup().id)]",
             "properties": {
                 "principalId": "[reference('ray-msi-user-identity').principalId]",
-                "roleDefinitionId": "[variables('Contributor')]"
+                "roleDefinitionId": "[variables('Contributor')]",
+                "scope": "[resourceGroup().id]",
+                "principalType": "ServicePrincipal"
             },
             "dependsOn": [
                 "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', 'ray-msi-user-identity')]"

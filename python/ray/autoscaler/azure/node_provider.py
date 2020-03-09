@@ -1,13 +1,15 @@
 import json
 import logging
+import os
 from threading import RLock
 
 from azure.common.client_factory import get_client_from_cli_profile
 from msrestazure.azure_active_directory import MSIAuthentication
 from azure.mgmt.compute import ComputeManagementClient
+from azure.mgmt.compute.models import ResourceIdentityType
 from azure.mgmt.network import NetworkManagementClient
 from azure.mgmt.resource import ResourceManagementClient
-from azure.mgmt.compute.models import ResourceIdentityType
+from azure.mgmt.resource.resources.models import DeploymentMode
 from knack.util import CLIError
 
 from ray.autoscaler.node_provider import NodeProvider
@@ -174,7 +176,6 @@ class AzureNodeProvider(NodeProvider):
         # TODO: restart deallocated nodes if possible
         location = self.provider_config["location"]
         resource_group = self.provider_config["resource_group"]
-        subnet_id = self.provider_config["subnet_id"]
 
         # load the template
         template_path = os.path.join(os.path.dirname(__file__), 'azure-vm-template.json')
@@ -188,10 +189,10 @@ class AzureNodeProvider(NodeProvider):
 
         name_tag = config_tags.get(TAG_RAY_NODE_NAME, "node")
 
-        parameters = config['azure_arm_parameters'].copy()
+        parameters = node_config['azure_arm_parameters'].copy()
         parameters["vmName"] = "{name}".format(name=name_tag)
         parameters["provisionPublicIp"] = not self.provider_config.get("use_internal_ips", False)
-        parameters["tags"] = config_tags
+        parameters["vmTags"] = config_tags
         parameters["vmCount"] = count
 
         deployment_properties = {
@@ -200,13 +201,14 @@ class AzureNodeProvider(NodeProvider):
             'parameters': {k: {'value': v} for k, v in parameters.items()}
         }
 
-        deployment_async_operation = resource_client.deployments.create_or_update(
+        deployment_async_operation = self.resource_client.deployments.create_or_update(
             resource_group,
-            'ray-config',
+            'ray-vm-{}'.format(name_tag),
             deployment_properties
         )
-        # we could get the private/public ips back directly
-        # deployment_async_operation.wait()
+
+        # TODO: we could get the private/public ips back directly
+        deployment_async_operation.wait()
        
     @synchronized
     def set_node_tags(self, node_id, tags):
