@@ -5,7 +5,7 @@ jumpbox_rg=mc-ray-jumpbox
 peering_name=ray-to-jumpbox
 blob_account_name=marcozopip
 
-yaml=$ray_home/python/marcozo-cluster.yaml
+yaml=$ray_home/python/ray/autoscaler/azure/marcozo.yaml
 
 subscription=`az account show -o tsv | cut -f 2`
 
