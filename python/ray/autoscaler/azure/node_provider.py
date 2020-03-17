@@ -232,22 +232,38 @@ class AzureNodeProvider(NodeProvider):
             resource_group_name=resource_group, vm_name=node_id)
         disks = vm.storage_profile.data_disks
         disks.append(vm.storage_profile.os_disk)
-        # delete machine
-        self.compute_client.virtual_machines.delete(
-            resource_group_name=resource_group, vm_name=node).wait()
-        # delete nic
-        self.network_client.network_interfaces.delete(
-            resource_group_name=resource_group,
-            network_interface_name=metadata["nic_name"])
+
+        try:
+            # delete machine
+            self.compute_client.virtual_machines.delete(
+                resource_group_name=resource_group, vm_name=node).wait()
+        except Exception as e:
+            logger.warning("Failed to delete VM: {}".format(e))
+
+        try:
+            # delete nic
+            self.network_client.network_interfaces.delete(
+                resource_group_name=resource_group,
+                network_interface_name=metadata["nic_name"])
+        except Exception as e:
+            logger.warning("Failed to delete nic: {}".format(e))
+        
         # delete ip address
         if "public_ip_name" in metadata:
-            self.network_client.public_ip_addresses.delete(
-                resource_group_name=resource_group,
-                public_ip_address_name=metadata["public_ip_name"])
-        # delete disks
-        for disk in disks:
-            self.compute_client.disks.delete(
-                resource_group_name=resource_group, disk_name=disk.name)
+            try:
+                self.network_client.public_ip_addresses.delete(
+                    resource_group_name=resource_group,
+                    public_ip_address_name=metadata["public_ip_name"])
+            except Exception as e:
+                logger.warning("Failed to delete public ip: {}".format(e))
+
+        try:
+            # delete disks
+            for disk in disks:
+                self.compute_client.disks.delete(
+                    resource_group_name=resource_group, disk_name=disk.name)
+        except Exception as e:
+            logger.warning("Failed to delete disk: {}".format(e))
 
     def _get_node(self, node_id):
         self._get_filtered_nodes({})  # Side effect: updates cache
