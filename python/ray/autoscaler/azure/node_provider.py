@@ -236,9 +236,12 @@ class AzureNodeProvider(NodeProvider):
         try:
             # delete machine
             self.compute_client.virtual_machines.delete(
-                resource_group_name=resource_group, vm_name=node).wait()
+                resource_group_name=resource_group, vm_name=node_id).wait()
         except Exception as e:
             logger.warning("Failed to delete VM: {}".format(e))
+
+        # get metadata
+        metadata = self._get_node(node_id)
 
         try:
             # delete nic
