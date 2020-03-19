@@ -244,9 +244,12 @@ class AzureNodeProvider(NodeProvider):
         disks = {d.name for d in vm.storage_profile.data_disks}
         disks.add(vm.storage_profile.os_disk.name)
 
-        # delete machine, must wait for this to complete
-        self.compute_client.virtual_machines.delete(
-            resource_group_name=resource_group, vm_name=node_id).wait()
+        try:
+            # delete machine, must wait for this to complete
+            self.compute_client.virtual_machines.delete(
+                resource_group_name=resource_group, vm_name=node_id).wait()
+        except Exception as e:
+            logger.warning("Failed to delete VM: {}".format(e))
 
         try:
             # delete nic
