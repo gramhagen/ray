@@ -7,13 +7,6 @@ from ray.autoscaler.tags import TAG_RAY_CLUSTER_NAME
 logger = logging.getLogger(__name__)
 
 
-def to_label_selector(tags):
-    label_selector = ""
-    for k, v in tags.items():
-        if label_selector != "":
-            label_selector += ","
-        label_selector += "{}={}".format(k, v)
-    return label_selector
 
 
 class KubernetesNodeProvider(NodeProvider):
@@ -34,7 +27,9 @@ class KubernetesNodeProvider(NodeProvider):
         ])
 
         tag_filters[TAG_RAY_CLUSTER_NAME] = self.cluster_name
-        label_selector = to_label_selector(tag_filters)
+        label_selector = ''.join(["{k}={v}".format(k=k, v=v) 
+            for k, v in tags.items()])
+
         pod_list = core_api().list_namespaced_pod(
             self.namespace,
             field_selector=field_selector,

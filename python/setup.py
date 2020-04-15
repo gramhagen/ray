@@ -106,7 +106,7 @@ class build_ext(_build_ext.build_ext):
         if build_java:
             # Also build binaries for Java if the above env variable exists.
             command += ["-l", "python,java"]
-        subprocess.check_call(command)
+        #subprocess.check_call(command)
 
         # We also need to install pickle5 along with Ray, so make sure that the
         # relevant non-Python pickle5 files get copied.
