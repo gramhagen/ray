@@ -59,7 +59,7 @@ spec:
           medium: Memory
       containers:
         - name: ray-head
-          image: rayproject/autoscaler
+          image: ray-project/autoscaler
           imagePullPolicy: Always
           command: [ "/bin/bash", "-c", "--" ]
           args: 
@@ -120,7 +120,7 @@ spec:
           medium: Memory
       containers:
       - name: ray-worker
-        image: rayproject/autoscaler
+        image: ray-project/autoscaler
         imagePullPolicy: Always
         command: ["/bin/bash", "-c", "--"]
         args:

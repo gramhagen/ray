@@ -7,8 +7,6 @@ from ray.autoscaler.tags import TAG_RAY_CLUSTER_NAME
 logger = logging.getLogger(__name__)
 
 
-
-
 class KubernetesNodeProvider(NodeProvider):
     def __init__(self, provider_config, cluster_name):
         NodeProvider.__init__(self, provider_config, cluster_name)
@@ -19,16 +17,12 @@ class KubernetesNodeProvider(NodeProvider):
         # Match pods that are in the 'Pending' or 'Running' phase.
         # Unfortunately there is no OR operator in field selectors, so we
         # have to match on NOT any of the other phases.
-        field_selector = ",".join([
-            "status.phase!=Failed",
-            "status.phase!=Unknown",
-            "status.phase!=Succeeded",
-            "status.phase!=Terminating",
-        ])
+        field_selector = ",".join(["status.phase!={}".format(s) for s in 
+            ["Failed", "Succeeded", "Terminating", "Unknown"]])
 
         tag_filters[TAG_RAY_CLUSTER_NAME] = self.cluster_name
-        label_selector = ''.join(["{k}={v}".format(k=k, v=v) 
-            for k, v in tags.items()])
+        label_selector = ','.join(["{k}={v}".format(k=k, v=v) 
+            for k, v in tag_filters.items()])
 
         pod_list = core_api().list_namespaced_pod(
             self.namespace,
@@ -61,12 +55,13 @@ class KubernetesNodeProvider(NodeProvider):
         core_api().patch_namespaced_pod(node_id, self.namespace, body)
 
     def create_node(self, node_config, tags, count):
-        pod_spec = node_config.copy()
         tags[TAG_RAY_CLUSTER_NAME] = self.cluster_name
+
+        pod_spec = node_config.copy()
         pod_spec["metadata"]["namespace"] = self.namespace
         pod_spec["metadata"]["labels"] = tags
-        logger.info(log_prefix + "calling create_namespaced_pod "
-                    "(count={}).".format(count))
+
+        logger.info("%sCreating %d namespaced pods", log_prefix, count)
         for _ in range(count):
             core_api().create_namespaced_pod(self.namespace, pod_spec)
 
