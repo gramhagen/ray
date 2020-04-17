@@ -12,35 +12,38 @@ def using_existing_msg(resource_type, name):
 
 
 def not_found_msg(resource_type, name):
-    logger.info("%s%s '%s' not found, attempting to create it", log_prefix, resource_type, name)
+    logger.info("%s%s '%s' not found, attempting to create it", log_prefix,
+                resource_type, name)
 
 
 def created_msg(resource_type, name):
-    logger.info("%ssuccessfully created %s '%s'", log_prefix, resource_type, name)
+    logger.info("%ssuccessfully created %s '%s'", log_prefix, resource_type,
+                name)
 
 
 def not_provided_msg(resource_type):
-    logger.info("%sno %s config provided, must already exist", log_prefix, resource_type)
+    logger.info("%sno %s config provided, must already exist", log_prefix,
+                resource_type)
 
 
 def bootstrap_kubernetes(config):
     if not config["provider"].get("use_internal_ips", False):
         return ValueError("Ray must use internal IP addresses for Kubernetes "
                           "Please set 'use_internal_ips' to true.")
- 
+
     config = configure_namespace(config)
     config = configure_autoscaler_service_account(config)
     config = configure_autoscaler_role(config)
     config = configure_autoscaler_role_binding(config)
-    
+
     return config
 
 
 def find_namespace_entry(items, field_name, namespace):
     if len(items) > 0:
         assert len(items) == 1, (
-            "Found multiple {field} entries with namespace: {name}"
-            .format(field=field_name, name=namespace))
+            "Found multiple {field} entries with namespace: {name}".format(
+                field=field_name, name=namespace))
         using_existing_msg(field_name, namespace)
         return True
     else:
@@ -56,8 +59,8 @@ def check_metadata(field, config):
     elif entry["metadata"]["namespace"] != namespace:
         raise ValueError(
             "Namespace of {field} config doesn't match provided namespace "
-            "'{ns}'. Set it to {ns} or remove the field."
-            .format(field=field, ns=namespace))
+            "'{ns}'. Set it to {ns} or remove the field.".format(
+                field=field, ns=namespace))
 
     name = entry["metadata"]["name"]
     return "metadata.name={}".format(name)
@@ -66,7 +69,8 @@ def check_metadata(field, config):
 def configure_namespace(config):
     namespace_field = "namespace"
     namespace = config["provider"].get(namespace_field)
-    assert namespace, "Provider config must include {} field".format(namespace_field)
+    assert namespace, "Provider config must include {} field".format(
+        namespace_field)
 
     field_selector = "metadata.name={}".format(namespace)
     namespaces = core_api().list_namespace(field_selector=field_selector).items
@@ -76,7 +80,7 @@ def configure_namespace(config):
         namespace_config = kubernetes.client.V1Namespace(metadata=metadata)
         core_api().create_namespace(namespace_config)
         created_msg(namespace_field, namespace)
-    
+
     return config
 
 
@@ -91,9 +95,9 @@ def configure_autoscaler_service_account(config):
         return config
 
     account = config["provider"][account_field]
-    accounts = core_api().list_namespaced_service_account(namespace, 
-        field_selector=field_selector).items
-    
+    accounts = core_api().list_namespaced_service_account(
+        namespace, field_selector=field_selector).items
+
     if not find_namespace_entry(accounts, account_field, namespace):
         core_api().create_namespaced_service_account(namespace, account)
         created_msg(account_field, namespace)
@@ -114,7 +118,7 @@ def configure_autoscaler_role(config):
     role = config["provider"][role_field]
     roles = auth_api().list_namespaced_role(
         namespace, field_selector=field_selector).items
-    
+
     if not find_namespace_entry(roles, role_field, namespace):
         auth_api().create_namespaced_role(namespace, role)
         created_msg(role_field, namespace)
@@ -123,7 +127,7 @@ def configure_autoscaler_role(config):
 
 
 def configure_autoscaler_role_binding(config):
-    namespace = config["provider"]["namespace"]    
+    namespace = config["provider"]["namespace"]
 
     binding_field = "autoscaler_role_binding"
     try:
@@ -139,8 +143,8 @@ def configure_autoscaler_role_binding(config):
         elif subject["namespace"] != namespace:
             raise ValueError(
                 "Namespace of {field} subject {subject} config doesn't match "
-                "provided namespace '{ns}'. Set it to {ns} or remove the field."
-                .format(field=field, subject=subject, ns=namespace))
+                "provided namespace '{ns}'. Set to {ns} or remove the field."
+                .format(field=binding_field, subject=subject, ns=namespace))
 
     bindings = auth_api().list_namespaced_role_binding(
         namespace, field_selector=field_selector).items

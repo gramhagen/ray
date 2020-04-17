@@ -11,7 +11,7 @@ spec:
       restartPolicy: Never
       containers:
         - name: ray-head
-          image: ray-project/autoscaler
+          image: rayproject/autoscaler
           imagePullPolicy: Always
           command: [ "/bin/bash", "-c", "--" ]
           args:

@@ -17,12 +17,14 @@ class KubernetesNodeProvider(NodeProvider):
         # Match pods that are in the 'Pending' or 'Running' phase.
         # Unfortunately there is no OR operator in field selectors, so we
         # have to match on NOT any of the other phases.
-        field_selector = ",".join(["status.phase!={}".format(s) for s in 
-            ["Failed", "Succeeded", "Terminating", "Unknown"]])
+        field_selector = ",".join([
+            "status.phase!={}".format(s)
+            for s in ["Failed", "Succeeded", "Terminating", "Unknown"]
+        ])
 
         tag_filters[TAG_RAY_CLUSTER_NAME] = self.cluster_name
-        label_selector = ','.join(["{k}={v}".format(k=k, v=v) 
-            for k, v in tag_filters.items()])
+        label_selector = ",".join(
+            ["{k}={v}".format(k=k, v=v) for k, v in tag_filters.items()])
 
         pod_list = core_api().list_namespaced_pod(
             self.namespace,
