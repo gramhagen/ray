@@ -1,10 +1,17 @@
 import logging
 
 import kubernetes
+from kubernetes.config import ConfigException
 
-from ray.autoscaler.kubernetes import auth_api, core_api, log_prefix
-
+log_prefix = "KubernetesNodeProvider: "
 logger = logging.getLogger(__name__)
+
+
+def config_k8s():
+    try:
+        kubernetes.config.load_incluster_config()
+    except ConfigException:
+        kubernetes.config.load_kube_config()
 
 
 def using_existing_msg(resource_type, name):
@@ -31,10 +38,14 @@ def bootstrap_kubernetes(config):
         return ValueError("Ray must use internal IP addresses for Kubernetes "
                           "Please set 'use_internal_ips' to true.")
 
-    config = configure_namespace(config)
-    config = configure_autoscaler_service_account(config)
-    config = configure_autoscaler_role(config)
-    config = configure_autoscaler_role_binding(config)
+    config_k8s()
+    core_api = kubernetes.client.CoreV1Api()
+    auth_api = kubernetes.client.RbacAuthorizationV1Api()
+
+    config = configure_namespace(config, core_api)
+    config = configure_autoscaler_service_account(config, core_api)
+    config = configure_autoscaler_role(config, auth_api)
+    config = configure_autoscaler_role_binding(config, auth_api)
 
     return config
 
@@ -66,14 +77,14 @@ def check_metadata(field, config):
     return "metadata.name={}".format(name)
 
 
-def configure_namespace(config):
+def configure_namespace(config, core_api):
     namespace_field = "namespace"
     namespace = config["provider"].get(namespace_field)
     assert namespace, "Provider config must include {} field".format(
         namespace_field)
 
     field_selector = "metadata.name={}".format(namespace)
-    namespaces = core_api().list_namespace(field_selector=field_selector).items
+    namespaces = core_api.list_namespace(field_selector=field_selector).items
 
     if not find_namespace_entry(namespaces, namespace_field, namespace):
         metadata = kubernetes.client.V1ObjectMeta(name=namespace)
@@ -84,7 +95,7 @@ def configure_namespace(config):
     return config
 
 
-def configure_autoscaler_service_account(config):
+def configure_autoscaler_service_account(config, core_api):
     namespace = config["provider"]["namespace"]
 
     account_field = "autoscaler_service_account"
@@ -99,13 +110,13 @@ def configure_autoscaler_service_account(config):
         namespace, field_selector=field_selector).items
 
     if not find_namespace_entry(accounts, account_field, namespace):
-        core_api().create_namespaced_service_account(namespace, account)
+        core_api.create_namespaced_service_account(namespace, account)
         created_msg(account_field, namespace)
 
     return config
 
 
-def configure_autoscaler_role(config):
+def configure_autoscaler_role(config, auth_api):
     namespace = config["provider"]["namespace"]
 
     role_field = "autoscaler_role"
@@ -120,13 +131,13 @@ def configure_autoscaler_role(config):
         namespace, field_selector=field_selector).items
 
     if not find_namespace_entry(roles, role_field, namespace):
-        auth_api().create_namespaced_role(namespace, role)
+        auth_api.create_namespaced_role(namespace, role)
         created_msg(role_field, namespace)
 
     return config
 
 
-def configure_autoscaler_role_binding(config):
+def configure_autoscaler_role_binding(config, auth_api):
     namespace = config["provider"]["namespace"]
 
     binding_field = "autoscaler_role_binding"
@@ -146,10 +157,10 @@ def configure_autoscaler_role_binding(config):
                 "provided namespace '{ns}'. Set to {ns} or remove the field."
                 .format(field=binding_field, subject=subject, ns=namespace))
 
-    bindings = auth_api().list_namespaced_role_binding(
+    bindings = auth_api.list_namespaced_role_binding(
         namespace, field_selector=field_selector).items
     if not find_namespace_entry(bindings, binding_field, namespace):
-        auth_api().create_namespaced_role_binding(namespace, binding)
+        auth_api.create_namespaced_role_binding(namespace, binding)
         created_msg(binding_field, namespace)
 
     return config
