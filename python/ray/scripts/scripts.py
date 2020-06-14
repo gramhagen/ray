@@ -608,8 +608,13 @@ def stop(force, verbose):
     is_flag=True,
     default=False,
     help="Don't ask for confirmation.")
+@click.option(
+    "--no-cache",
+    is_flag=True,
+    default=False,
+    help="Do not write or use cached config file.")
 def create_or_update(cluster_config_file, min_workers, max_workers, no_restart,
-                     restart_only, yes, cluster_name):
+                     restart_only, yes, cluster_name, no_cache):
     """Create or update a Ray cluster."""
     if restart_only or no_restart:
         assert restart_only != no_restart, "Cannot set both 'restart_only' " \
@@ -625,7 +630,7 @@ def create_or_update(cluster_config_file, min_workers, max_workers, no_restart,
         except urllib.error.HTTPError as e:
             logger.info("Error downloading file: ", e)
     create_or_update_cluster(cluster_config_file, min_workers, max_workers,
-                             no_restart, restart_only, yes, cluster_name)
+                             no_restart, restart_only, yes, cluster_name, no_cache=no_cache)
 
 
 @cli.command(hidden=True)
@@ -823,9 +828,14 @@ def rsync_up(cluster_config_file, source, target, cluster_name, all_nodes):
     required=False,
     type=str,
     help="(deprecated) Use '-- --arg1 --arg2' for script args.")
+@click.option(
+    "--no-cache",
+    is_flag=True,
+    default=False,
+    help="Do not write or use cached config file.")
 @click.argument("script_args", nargs=-1)
 def submit(cluster_config_file, docker, screen, tmux, stop, start,
-           cluster_name, port_forward, script, args, script_args):
+           cluster_name, port_forward, script, args, script_args, no_cache):
     """Uploads and runs a script on the specified cluster.
 
     The script is automatically synced to the following location:
@@ -846,7 +856,7 @@ def submit(cluster_config_file, docker, screen, tmux, stop, start,
 
     if start:
         create_or_update_cluster(cluster_config_file, None, None, False, False,
-                                 True, cluster_name)
+                                 True, cluster_name, no_cache=no_cache)
     target = os.path.basename(script)
     if not docker:
         target = os.path.join("~", target)
